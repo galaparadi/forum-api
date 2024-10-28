@@ -12,7 +12,7 @@ exports.up = (pgm) => {
       type: 'VARCHAR(50)',
       notNull: true,
     },
-    userid: {
+    owner: {
       type: 'VARCHAR(50)',
       notNull: true,
     },
@@ -20,9 +20,13 @@ exports.up = (pgm) => {
       type: 'TEXT',
       notNull: true,
     },
+    isliked: {
+      type: 'BOOLEAN',
+      default: false,
+    },
   });
 
-  pgm.addConstraint('comments-like', 'unique_comments_like', 'UNIQUE(commentid, userid)');
+  pgm.addConstraint('comments-like', 'unique_comments_like', 'UNIQUE(commentid, owner)');
 };
 
 exports.down = (pgm) => {
