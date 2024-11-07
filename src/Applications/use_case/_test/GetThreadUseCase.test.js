@@ -3,14 +3,13 @@ const ThreadRepository = require('../../../Domains/threads/ThreadRepository');
 const CommentRepository = require('../../../Domains/comments/CommentRepository');
 const GetThreadUseCase = require('../GetThreadUseCase');
 const Comment = require('../../../Domains/comments/entities/Comment');
-const ReplyRepository = require('../../../Domains/reply/ReplyRepository');
 const Reply = require('../../../Domains/reply/entities/Reply');
-const CommentLikeRepository = require('../../../Domains/comments-like/CommentLikeRepository');
+const CommentsReplies = require('../../../Domains/comments/entities/CommentsReplies');
 
 describe('GetThreadUseCase', () => {
   it('should orchestrating the add thread action correctly', async () => {
+    // TODO: update use case using new repository method
     // Arrange
-    const threadDate = new Date();
     const useCasePayload = {
       threadId: 'thread-123',
     };
@@ -21,125 +20,94 @@ describe('GetThreadUseCase', () => {
       title: 'thread awal',
       body: 'thread body',
       username: 'Dicoding',
-      date: threadDate,
+      date: new Date('2014-01-01 10:11:56'),
     });
 
-    const mockedComments = [
-      new Comment({
-        id: 'comment-111',
-        content: 'content1',
-        date: new Date('2014-01-01 10:11:55'),
-        username: 'dudung',
-        isDeleted: true,
-      }),
-      new Comment({
-        id: 'comment-123',
-        content: 'content2',
-        date: new Date('2014-01-01 10:11:56'),
-        username: 'mamat',
-        isDeleted: false,
-      }),
-    ];
+    const mockedCommentsReplies = new CommentsReplies();
 
-    const mockedReply = [
-      new Reply({
-        id: 'reply-123',
-        username: 'dicoding',
-        date: new Date('2014-01-01 10:11:57'),
-        content: 'content',
-        isDeleted: false,
-      }),
-    ];
+    mockedCommentsReplies.pushComment(new Comment({
+      id: 'comment-123',
+      username: 'dudung',
+      date: new Date('2014-01-01 10:11:56'),
+      content: 'comment 1',
+      likeCount: 2,
+      isDeleted: false,
+    }));
+
+    mockedCommentsReplies.pushReply('comment-123', new Reply({
+      id: 'reply-1',
+      content: 'reply 123',
+      date: new Date('2014-01-01 10:11:56'),
+      username: 'wowo',
+      isDeleted: false,
+    }));
+    mockedCommentsReplies.pushReply('comment-123', new Reply({
+      id: 'reply-2',
+      content: 'reply 2',
+      date: new Date('2014-01-01 10:11:56'),
+      username: 'fufu',
+      isDeleted: true,
+    }));
 
     // Expected result
-    const mockResult = new Thread({
-      id: useCasePayload.threadId,
-      title: mockedThread.title,
-      body: mockedThread.body,
-      username: mockedThread.username,
-      date: threadDate,
+    const expectedResult = new Thread({
+      id: 'thread-123',
+      title: 'thread awal',
+      body: 'thread body',
+      username: 'Dicoding',
+      date: new Date('2014-01-01 10:11:56'),
     });
 
-    mockResult.comments = [
-      new Comment({
-        id: 'comment-111',
-        content: 'content1',
-        date: new Date('2014-01-01 10:11:55'),
-        username: 'dudung',
-        isDeleted: true,
-      }),
-      new Comment({
+    const expectedComments = [
+      {
         id: 'comment-123',
-        content: 'content2',
+        content: 'comment 1',
+        username: 'dudung',
         date: new Date('2014-01-01 10:11:56'),
-        username: 'mamat',
-        isDeleted: false,
-      }),
+        likeCount: 2,
+        replies: [
+          {
+            id: 'reply-1',
+            content: 'reply 123',
+            date: new Date('2014-01-01 10:11:56'),
+            username: 'wowo',
+          },
+          {
+            id: 'reply-2',
+            content: '**balasan telah dihapus**',
+            date: new Date('2014-01-01 10:11:56'),
+            username: 'fufu',
+          },
+        ],
+      },
     ];
-
-    mockResult.comments[0].likeCount = 1;
-    mockResult.comments[0].replies = [
-      new Reply({
-        id: 'reply-123',
-        username: 'dicoding',
-        date: new Date('2014-01-01 10:11:57'),
-        content: 'content',
-        isDeleted: false,
-      }),
-    ];
-
-    mockResult.comments[1].likeCount = 1;
-    mockResult.comments[1].replies = [
-      new Reply({
-        id: 'reply-123',
-        username: 'dicoding',
-        date: new Date('2014-01-01 10:11:57'),
-        content: 'content',
-        isDeleted: false,
-      }),
-    ];
+    expectedResult.comments = expectedComments;
 
     /** creating dependency of use case */
     const mockThreadRepository = new ThreadRepository();
     const mockCommentRepository = new CommentRepository();
-    const mockReplyRepository = new ReplyRepository();
-    const mockCommentLikeRepository = new CommentLikeRepository();
 
     /** mocking needed function */
     mockThreadRepository.getThread = jest.fn()
       .mockImplementation(() => Promise.resolve(mockedThread));
-    mockCommentRepository.getCommentsFromThread = jest.fn()
-      .mockImplementation(() => Promise.resolve(mockedComments));
-    mockReplyRepository.getRepliesFromComment = jest.fn()
-      .mockImplementation(() => Promise.resolve(mockedReply));
-    mockCommentLikeRepository.getLikeCount = jest.fn()
-      .mockImplementation(() => Promise.resolve({ count: 1 }));
+    mockCommentRepository.getCommentsAndReplyFromThread = jest.fn()
+      .mockImplementation(() => Promise.resolve(mockedCommentsReplies));
 
     /** creating use case instance */
     const getThreadUseCase = new GetThreadUseCase({
       threadRepository: mockThreadRepository,
       commentRepository: mockCommentRepository,
-      replyRepository: mockReplyRepository,
-      commentLikeRepository: mockCommentLikeRepository,
     });
 
     // Action
     const thread = await getThreadUseCase.execute(useCasePayload);
 
     // Assert
-    expect(thread).toStrictEqual(mockResult);
+    expect(thread).toStrictEqual(expectedResult);
 
     expect(mockThreadRepository.getThread)
       .toBeCalledWith(useCasePayload.threadId);
-    expect(mockCommentRepository.getCommentsFromThread)
+    expect(mockCommentRepository.getCommentsAndReplyFromThread)
       .toBeCalledWith(useCasePayload.threadId);
-    expect(mockReplyRepository.getRepliesFromComment)
-      .toBeCalledTimes(mockedComments.length);
-    expect(mockReplyRepository.getRepliesFromComment)
-      .toBeCalledWith('comment-111');
-    expect(mockReplyRepository.getRepliesFromComment)
-      .toBeCalledWith('comment-123');
-    expect(mockCommentLikeRepository.getLikeCount).toBeCalledWith('comment-111');
-    expect(mockCommentLikeRepository.getLikeCount).toBeCalledWith('comment-123');
   });
 });

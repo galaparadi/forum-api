@@ -6,7 +6,7 @@ class Reply {
     this.date = payload.date;
     this.username = payload.username;
     this.isDeleted = payload.isDeleted;
-    this._hideDeltedContent();
+    this._hideDeletedContent();
   }
 
   _verifyPayload({
@@ -21,7 +21,7 @@ class Reply {
     }
   }
 
-  _hideDeltedContent() {
+  _hideDeletedContent() {
     if (this.isDeleted) {
       this.content = '**balasan telah dihapus**';
     }

@@ -7,6 +7,7 @@ class Comment {
     this.content = payload.content;
     this.replies = [];
     this.isDeleted = payload.isDeleted;
+    this.likeCount = payload.likeCount || 0;
     this._hideDeletedContent();
   }
 
