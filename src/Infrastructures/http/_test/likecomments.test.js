@@ -92,7 +92,6 @@ describe('/threads/{threadId}/comments/{commentId}/likes endpoint', () => {
     });
 
     it('should response 201 and comment like count is 1', async () => {
-      // TODO: test comment like
       // Arrange
       const tokenManager = container.getInstance(AuthenticationTokenManager.name);
       await UsersTableTestHelper.addUser({ username: 'mamat' });
