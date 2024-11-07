@@ -19,10 +19,12 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd ~/src/forum-api-v2
-          ls -al
-          whoami
           git pull origin main
-          printenv
+          export NVM_INC=/home/ubuntu/.nvm/versions/node/v22.11.0/include/node
+          export NVM_DIR=/home/ubuntu/.nvm
+          export NVM_CD_FLAGS=
+          export NVM_BIN=/home/ubuntu/.nvm/versions/node/v22.11.0/bin
+          source ~/.nvm/nvm.sh
           npm install
           npm run migrate up
           pm2 restart forum-api
