@@ -1,10 +1,13 @@
 const Thread = require('../../Domains/threads/entities/Thread');
 
 class GetThreadUseCase {
-  constructor({ threadRepository, commentRepository, replyRepository }) {
+  constructor({
+    threadRepository, commentRepository, replyRepository, commentLikeRepository,
+  }) {
     this._threadRepository = threadRepository;
     this._commentRepository = commentRepository;
     this._replyRepository = replyRepository;
+    this._commentLikeRepository = commentLikeRepository;
   }
 
   async execute(useCasePayload) {
@@ -24,6 +27,7 @@ class GetThreadUseCase {
       } catch (error) {
         // DO nothing. Just skip and continue.
       }
+      comment.likeCount = (await this._commentLikeRepository.getLikeCount(comment.id)).count;
       thread.comments.push(comment);
       thread.comments.sort((commentA, commentB) => commentA.date - commentB.date);
     }
