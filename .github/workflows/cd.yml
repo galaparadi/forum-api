@@ -19,6 +19,8 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd ~/src/forum-api-v2
+          ls -al
+          whoami
           git pull origin main
           printenv
           npm install
