@@ -95,6 +95,101 @@ describe('ReplyRepositoryPostgres', () => {
     });
   });
 
+  describe('getRepliesFromCommentList', () => {
+    it('should throw error when parameter is not array', async () => {
+      const comments = { 1: 'comment-123', 2: 'comment-2' };
+      const fakeIdGenerator = () => '123';
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, fakeIdGenerator);
+
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadTableTestHelper.addThread({ id: 'thread-123' });
+      await CommentTableTestHelper.addComment({ id: 'comment-123' });
+      await CommentTableTestHelper.addComment({ id: 'comment-2' });
+      await CommentTableTestHelper.addComment({ id: 'comment-3' });
+
+      await ReplyTableTestHelper.addReply({ id: 'reply-1', content: 'reply 1' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-2', content: 'reply 2' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-3', commentid: 'comment-2', content: 'reply 3' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-4', commentid: 'comment-3', content: 'reply 3' });
+
+      await expect(replyRepositoryPostgres.getRepliesFromCommentList(comments)).rejects.toThrowError('REPLY_REPOSITORY_POSTGRES.GET_REPLIES_FROM_COMMENTLIST.NOT_MEET_PAYLOAD_DATA_TYPE');
+    });
+
+    it('should return empty array when comment list doesn\'t have reply', async () => {
+      const comments = ['comment-456', 'comment-394'];
+      const fakeIdGenerator = () => '123';
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, fakeIdGenerator);
+
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadTableTestHelper.addThread({ id: 'thread-123' });
+      await CommentTableTestHelper.addComment({ id: 'comment-123' });
+      await CommentTableTestHelper.addComment({ id: 'comment-2' });
+      await CommentTableTestHelper.addComment({ id: 'comment-3' });
+
+      await ReplyTableTestHelper.addReply({ id: 'reply-1', content: 'reply 1' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-2', content: 'reply 2' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-3', commentid: 'comment-2', content: 'reply 3' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-4', commentid: 'comment-3', content: 'reply 3' });
+
+      const result = await replyRepositoryPostgres.getRepliesFromCommentList(comments);
+      expect(Array.isArray(result)).toBeTruthy();
+      expect(result.length).toEqual(0);
+    });
+
+    it('should return correct value', async () => {
+      const comments = ['comment-123', 'comment-2'];
+      const fakeIdGenerator = () => '123';
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, fakeIdGenerator);
+
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadTableTestHelper.addThread({ id: 'thread-123' });
+      await CommentTableTestHelper.addComment({ id: 'comment-123' });
+      await CommentTableTestHelper.addComment({ id: 'comment-2' });
+      await CommentTableTestHelper.addComment({ id: 'comment-3' });
+
+      await ReplyTableTestHelper.addReply({ id: 'reply-1', content: 'reply 1' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-2', content: 'reply 2' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-3', commentid: 'comment-2', content: 'reply 3' });
+      await ReplyTableTestHelper.addReply({ id: 'reply-4', commentid: 'comment-3', content: 'reply 3' });
+
+      const expectedResult = [
+        {
+          commentId: 'comment-123',
+          reply: new Reply({
+            id: 'reply-1',
+            isDeleted: false,
+            username: 'dicoding',
+            date: new Date('2014-01-01 10:11:56'),
+            content: 'reply 1',
+          }),
+        },
+        {
+          commentId: 'comment-123',
+          reply: new Reply({
+            id: 'reply-2',
+            isDeleted: false,
+            username: 'dicoding',
+            date: new Date('2014-01-01 10:11:56'),
+            content: 'reply 2',
+          }),
+        },
+        {
+          commentId: 'comment-2',
+          reply: new Reply({
+            id: 'reply-3',
+            isDeleted: false,
+            username: 'dicoding',
+            date: new Date('2014-01-01 10:11:56'),
+            content: 'reply 3',
+          }),
+        },
+      ];
+
+      const result = await replyRepositoryPostgres.getRepliesFromCommentList(comments);
+      expect(result).toStrictEqual(expectedResult);
+    });
+  });
+
   describe('getRepliesFromComment', () => {
     it("should throw notfound error when comment doesn't exist", async () => {
       // Arange

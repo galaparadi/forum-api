@@ -56,6 +56,32 @@ class ReplyRepositoryPostgres extends ReplyRepository {
     return replyList;
   }
 
+  async getRepliesFromCommentList(comments) {
+    if (!Array.isArray(comments)) throw new Error('REPLY_REPOSITORY_POSTGRES.GET_REPLIES_FROM_COMMENTLIST.NOT_MEET_PAYLOAD_DATA_TYPE');
+
+    const query = {
+      text: `
+      SELECT commentid, replies.isdeleted, replies.id, users.username, replies.date, replies.content
+      FROM replies
+      INNER JOIN users ON users.id = replies.owner
+      WHERE commentid = ANY($1::text[])
+      ORDER BY id
+      `,
+      values: [comments],
+    };
+
+    const { rows } = await this._pool.query(query);
+
+    return rows.map((row) => ({
+      commentId: row.commentid,
+      reply: new Reply({
+        ...row,
+        isDeleted: row.isdeleted,
+        date: new Date(row.date),
+      }),
+    }));
+  }
+
   async deleteReply(replyId) {
     const query = {
       text: 'UPDATE replies SET isdeleted = true WHERE id = $1 RETURNING *',
