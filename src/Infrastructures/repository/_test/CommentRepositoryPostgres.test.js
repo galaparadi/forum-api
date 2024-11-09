@@ -1,7 +1,7 @@
 const ThreadTableTestHelper = require('../../../../tests/ThreadTableTestHelper');
 const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
 const CommentTableTestHelper = require('../../../../tests/CommentTableTestHelper');
-const ReplyTableTestHelper = require('../../../../tests/ReplyTableTestHelper');
+const CommentLikeTableTestHelper = require('../../../../tests/CommentLikeTableTestHelper');
 const pool = require('../../database/postgres/pool');
 const CommentRepositoryPostgres = require('../CommentRepositoryPostgres');
 const SubmitComment = require('../../../Domains/comments/entities/SubmitComment');
@@ -10,8 +10,6 @@ const Comment = require('../../../Domains/comments/entities/Comment');
 const NotFoundError = require('../../../Commons/exceptions/NotFoundError');
 const AuthorizationError = require('../../../Commons/exceptions/AuthorizationError');
 const DeleteComment = require('../../../Domains/comments/entities/DeleteComment');
-const CommentsReplies = require('../../../Domains/comments/entities/CommentsReplies');
-const Reply = require('../../../Domains/reply/entities/Reply');
 
 describe('CommentRepositoryPostgres', () => {
   afterEach(async () => {
@@ -88,73 +86,6 @@ describe('CommentRepositoryPostgres', () => {
     });
   });
 
-  describe('getCommentsAndReplyFromThread function', () => {
-    it("should return empty array when thread doesn't have comments", async () => {
-      const threadId = 'thread-321';
-      const fakeIdGenerator = () => '123';
-      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, fakeIdGenerator);
-
-      await UsersTableTestHelper.addUser({ id: 'user-123' });
-      await ThreadTableTestHelper.addThread({ id: 'thread-123' });
-
-      // Action & Assert
-      const result = await commentRepositoryPostgres.getCommentsAndReplyFromThread(threadId);
-      expect(Array.isArray(result)).toBeTruthy();
-      expect(result.length).toBe(0);
-    });
-
-    it('should get result correctly', async () => {
-      const threadId = 'thread-123';
-      const fakeIdGenerator = () => '123';
-      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, fakeIdGenerator);
-
-      await UsersTableTestHelper.addUser({ id: 'user-1', username: 'dudung' });
-      await UsersTableTestHelper.addUser({ id: 'user-2', username: 'wowo' });
-      await UsersTableTestHelper.addUser({ id: 'user-3', username: 'fufu' });
-      await ThreadTableTestHelper.addThread({ id: 'thread-123', owner: 'user-1' });
-
-      await CommentTableTestHelper.addComment({ id: 'comment-123', owner: 'user-1', content: 'comment 1' });
-      await ReplyTableTestHelper.addReply({
-        id: 'reply-1', owner: 'user-2', content: 'reply 123',
-      });
-      await ReplyTableTestHelper.addReply({
-        id: 'reply-2', owner: 'user-3', content: 'reply 2', isdeleted: true,
-      });
-
-      // TODO: change expected result to CommentsReplies entity
-      const expectedResult = new CommentsReplies();
-
-      expectedResult.pushComment(new Comment({
-        id: 'comment-123',
-        username: 'dudung',
-        date: new Date('2014-01-01 10:11:56'),
-        content: 'comment 1',
-        isDeleted: false,
-      }));
-
-      expectedResult.pushReply('comment-123', new Reply({
-        id: 'reply-1',
-        content: 'reply 123',
-        date: new Date('2014-01-01 10:11:56'),
-        username: 'wowo',
-        isDeleted: false,
-      }));
-      expectedResult.pushReply('comment-123', new Reply({
-        id: 'reply-2',
-        content: 'reply 2',
-        date: new Date('2014-01-01 10:11:56'),
-        username: 'fufu',
-        isDeleted: true,
-      }));
-
-      // Action
-      const result = await commentRepositoryPostgres.getCommentsAndReplyFromThread(threadId);
-
-      // Assert
-      expect(result).toStrictEqual(expectedResult);
-    });
-  });
-
   describe('getCommentFromThread function', () => {
     it("should throw notfound error when thread doesn't exist", async () => {
       // Arange
@@ -166,7 +97,7 @@ describe('CommentRepositoryPostgres', () => {
       await ThreadTableTestHelper.addThread({ id: 'thread-123' });
 
       // Action & Assert
-      expect(commentRepositoryPostgres.getCommentsFromThread(threadId))
+      await expect(commentRepositoryPostgres.getCommentsFromThread(threadId))
         .rejects.toThrowError(NotFoundError);
     });
 
@@ -195,6 +126,58 @@ describe('CommentRepositoryPostgres', () => {
       expect(comment.content).toBe('comment 1');
       expect(comment.date).toEqual(new Date('2014-01-01 10:11:56'));
       expect(Array.isArray(comment.replies)).toBe(true);
+    });
+
+    it('should return correct like count', async () => {
+      // Arange
+      const threadId = 'thread-123';
+      const fakeIdGenerator = () => '123';
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, fakeIdGenerator);
+
+      await UsersTableTestHelper.addUser({ id: 'user-1', username: 'dudung' });
+      await UsersTableTestHelper.addUser({ id: 'user-2', username: 'mamat' });
+      await UsersTableTestHelper.addUser({ id: 'user-3', username: 'wowo' });
+      await ThreadTableTestHelper.addThread({ id: 'thread-123', owner: 'user-1' });
+
+      await CommentTableTestHelper.addComment({ id: 'comments-1', content: 'comment 1', owner: 'user-3' });
+      await CommentTableTestHelper.addComment({ id: 'comments-2', content: 'comment 2', owner: 'user-3' });
+      await CommentLikeTableTestHelper.addLike({
+        id: 'like-1', commentId: 'comments-1', owner: 'user-2', isliked: true,
+      });
+      await CommentLikeTableTestHelper.addLike({
+        id: 'like-2', commentId: 'comments-1', owner: 'user-3', isliked: true,
+      });
+      await CommentLikeTableTestHelper.addLike({
+        id: 'like-3', commentId: 'comments-2', owner: 'user-3', isliked: true,
+      });
+
+      const expectedResult = [
+        new Comment({
+          id: 'comments-1',
+          username: 'wowo',
+          date: new Date('2014-01-01T03:11:56.000Z'),
+          content: 'comment 1',
+          replies: [],
+          isDeleted: false,
+          likeCount: 2,
+        }),
+        new Comment({
+          id: 'comments-2',
+          username: 'wowo',
+          date: new Date('2014-01-01T03:11:56.000Z'),
+          content: 'comment 2',
+          replies: [],
+          isDeleted: false,
+          likeCount: 1,
+        }),
+      ];
+
+      // Action & Assert
+      const comments = await commentRepositoryPostgres.getCommentsFromThread(threadId);
+      expect(Array.isArray(comments)).toBe(true);
+      expect(comments).not.toBeInstanceOf(InvariantError);
+      expect(comments.length).toBeGreaterThan(0);
+      expect(comments).toStrictEqual(expectedResult);
     });
   });
 
