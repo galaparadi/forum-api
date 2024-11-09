@@ -155,7 +155,7 @@ describe('CommentRepositoryPostgres', () => {
         new Comment({
           id: 'comments-1',
           username: 'wowo',
-          date: new Date('2014-01-01T03:11:56.000Z'),
+          date: new Date('2014-01-01 10:11:56'),
           content: 'comment 1',
           replies: [],
           isDeleted: false,
@@ -164,7 +164,7 @@ describe('CommentRepositoryPostgres', () => {
         new Comment({
           id: 'comments-2',
           username: 'wowo',
-          date: new Date('2014-01-01T03:11:56.000Z'),
+          date: new Date('2014-01-01 10:11:56'),
           content: 'comment 2',
           replies: [],
           isDeleted: false,
