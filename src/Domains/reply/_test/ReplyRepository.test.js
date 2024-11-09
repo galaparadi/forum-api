@@ -11,5 +11,6 @@ describe('ReplyRepository', () => {
     await expect(replyRepository.checkReplyExistence({})).rejects.toThrowError('REPLY.METHOD_NOT_IMPLEMENTED');
     await expect(replyRepository.verifyOwner({})).rejects.toThrowError('REPLY.METHOD_NOT_IMPLEMENTED');
     await expect(replyRepository.getRepliesFromComment({})).rejects.toThrowError('REPLY.METHOD_NOT_IMPLEMENTED');
+    await expect(replyRepository.getRepliesFromCommentList({})).rejects.toThrowError('REPLY.METHOD_NOT_IMPLEMENTED');
   });
 });
