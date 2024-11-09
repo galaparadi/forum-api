@@ -9,6 +9,10 @@ class ReplyRepository {
     throw new Error('REPLY.METHOD_NOT_IMPLEMENTED');
   }
 
+  async getRepliesFromCommentList(comments) {
+    throw new Error('REPLY.METHOD_NOT_IMPLEMENTED');
+  }
+
   async deleteReply(deleteReply) {
     throw new Error('REPLY.METHOD_NOT_IMPLEMENTED');
   }
