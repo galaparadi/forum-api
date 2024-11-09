@@ -1,7 +1,6 @@
 const Reply = require('../../reply/entities/Reply');
 const Comment = require('./Comment');
 
-// TODO: entities for comments thread lengkap
 class CommentsReplies {
   constructor() {
     this.comments = new Map();
@@ -22,7 +21,7 @@ class CommentsReplies {
   pushReply(commentId, reply) {
     this._verifyReplyPayload(reply);
     const comment = this.comments.get(commentId);
-    if (comment) {
+    if (comment) { // if comment doesn't exist, skip and move on. if exist add reply to comment
       comment.replies.set(reply.id, reply);
     }
   }

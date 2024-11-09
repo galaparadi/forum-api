@@ -36,6 +36,87 @@ describe('CommentsReplies entities', () => {
     expect(() => comments.pushReply(comment.id, reply)).toThrowError('COMMENT_REPLIES.PAYLOAD_IS_NOT_INSTANCE_OF_REPLY');
   });
 
+  it('should not throw error when add reply to a comment that doesn\'t exist', () => {
+    // Arrange
+    const currDate = new Date();
+    const comment = new Comment({
+      id: 'comment-123',
+      username: 'dudung',
+      date: currDate,
+      content: 'content',
+      isDeleted: false,
+    });
+
+    const reply = new Reply({
+      id: 'reply-123',
+      content: 'reply 123',
+      date: currDate,
+      username: 'lah ya gak tau',
+      isDeleted: false,
+    });
+    const reply2 = new Reply({
+      id: 'reply-123',
+      content: 'reply 323',
+      date: currDate,
+      username: 'lah ya gak tau',
+      isDeleted: false,
+    });
+
+    const expectedReply = (new Map()).set('reply-123', new Reply({
+      id: 'reply-123',
+      content: 'reply 123',
+      date: currDate,
+      username: 'lah ya gak tau',
+      isDeleted: false,
+    }));
+
+    // Action
+    const commentList = new CommentsReplies();
+    commentList.pushComment(comment);
+    commentList.pushReply(comment.id, reply);
+
+    // Assert
+    expect(() => commentList.pushReply('xxx', reply2)).not.toThrowError();
+    expect(commentList.comments.get('comment-123').replies).toStrictEqual(expectedReply);
+  });
+
+  it('should not clear replies when adding comment twice', () => {
+    // Arrange
+    const currDate = new Date();
+    const comment = new Comment({
+      id: 'comment-123',
+      username: 'dudung',
+      date: currDate,
+      content: 'content',
+      isDeleted: false,
+    });
+
+    const reply = new Reply({
+      id: 'reply-123',
+      content: 'reply 123',
+      date: currDate,
+      username: 'lah ya gak tau',
+      isDeleted: false,
+    });
+
+    const expectedReply = (new Map()).set('reply-123', new Reply({
+      id: 'reply-123',
+      content: 'reply 123',
+      date: currDate,
+      username: 'lah ya gak tau',
+      isDeleted: false,
+    }));
+
+    // Action
+    const commentList = new CommentsReplies();
+    commentList.pushComment(comment);
+    commentList.pushReply(comment.id, reply);
+    commentList.pushComment(comment);
+
+    // Assert
+    expect(commentList.comments.get('comment-123').replies).toStrictEqual(expectedReply);
+  });
+
   it('should create CommentsReplies object correctly', () => {
     // Arrange
     const currDate = new Date();
